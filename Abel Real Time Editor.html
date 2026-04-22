@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebDev Editor</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --bg: #f1f5f9;
+            --editor-bg: #1e1e1e;
+            --text: #ffffff;
+            --edge-gray: #e8eaed;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            background-color: var(--bg);
+            overflow: hidden;
+        }
+
+        /* --- AGREEMENT MODAL --- */
+        #agreement-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .modal {
+            background: white;
+            width: 90%;
+            max-width: 650px;
+            max-height: 85vh;
+            padding: 25px;
+            border-radius: 12px;
+            overflow-y: auto;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+        }
+
+        .legal-section {
+            margin-bottom: 20px;
+        }
+
+        .legal-box {
+            background: #f8fafc;
+            border: 1px solid #cbd5e1;
+            padding: 15px;
+            height: 180px;
+            overflow-y: scroll;
+            font-size: 13px;
+            line-height: 1.5;
+            color: #334155;
+            border-radius: 6px;
+        }
+
+        /* --- EDITOR UI --- */
+        #browser-title-bar {
+            background: var(--edge-gray);
+            height: 35px;
+            display: flex;
+            align-items: center;
+            padding: 0 15px;
+            border-bottom: 1px solid #ccc;
+        }
+
+        .tab-mock {
+            background: white;
+            height: 28px;
+            padding: 0 20px;
+            display: flex;
+            align-items: center;
+            border-radius: 8px 8px 0 0;
+            border: 1px solid #ccc;
+            border-bottom: none;
+            font-size: 12px;
+            color: #555;
+        }
+
+        header {
+            background: #ffffff;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #ddd;
+            gap: 10px;
+        }
+
+        .button-group { display: flex; gap: 8px; align-items: center; }
+
+        button {
+            padding: 7px 14px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            transition: 0.2s;
+        }
+
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-success { background: #10b981; color: white; }
+        .btn-danger { background: #ef4444; color: white; }
+        .btn-gray { background: #64748b; color: white; }
+        .btn-tab { background: #e2e8f0; color: #475569; }
+        .btn-tab.active { background: var(--primary); color: white; }
+
+        main { display: flex; flex: 1; overflow: hidden; }
+
+        #editor-container, #preview-container, #files-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+        }
+
+        textarea {
+            flex: 1;
+            background: var(--editor-bg);
+            color: var(--text);
+            font-family: 'Consolas', 'Courier New', monospace;
+            padding: 15px;
+            border-radius: 8px;
+            resize: none;
+            outline: none;
+            line-height: 1.4;
+        }
+
+        iframe { flex: 1; background: white; border: 1px solid #ddd; border-radius: 8px; }
+
+        #files-container { display: none; background: white; overflow-y: auto; }
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+            background: #fff;
+        }
+
+        footer { background: white; padding: 6px; font-size: 11px; text-align: center; border-top: 1px solid #ddd; color: #94a3b8; }
+
+        @media (max-width: 768px) { main { flex-direction: column; } }
+    </style>
+</head>
+<body>
+
+<div id="agreement-overlay">
+    <div class="modal">
+        <h2 style="margin-top:0;">WebDev Editor | Welcome</h2>
+        <p style="color: #64748b; font-size: 14px;">Please read and accept the following to use the editor.Note:You can also scrool within the boxes</p>
+        
+        <div class="legal-section">
+            <strong>Terms of Service</strong>
+            <div class="legal-box">
+                <b>1. Ownership:</b> This application is the original creation of Abel Joseph Christopher. All source code, design elements, and logic are the intellectual property of the developer. <br><br>
+                <b>2. Code Restriction:</b> Users are strictly prohibited from copying, modifying, or redistributing the source code of this editor without explicit written permission from Abel Joseph Christopher and his legal guardian. <br><br>
+                <b>3. Content Prohibition:</b> Users are strictly prohibited from creating, testing, or displaying illegal, harmful, or malicious content (including but not limited to phishing pages, scams, or offensive material) within this editor. <br><br>
+                <b>4. Liability:</b> The developer is NOT responsible for any content created by users. You use this tool at your own risk. The developer is not liable for data loss due to browser cache clearing or local storage resets. <br><br>
+                <b>5. Local Execution:</b> This is an educational tool. All code execution happens client-side.
+            </div>
+        </div>
+
+        <div class="legal-section">
+            <strong>Privacy Policy</strong>
+            <div class="legal-box">
+                <b>1. Zero Data Collection:</b> We do not collect, share, or sell any personal information. No cookies (other than local storage) are used for tracking. <br><br>
+                <b>2. Local Storage:</b> All "Saved Projects" are stored exclusively in your browser's LocalStorage. This data never leaves your computer and is not accessible by the developer or any third party. <br><br>
+                <b>3. GitHub Hosting:</b> This site is hosted via GitHub Pages. GitHub may collect standard diagnostic logs; please refer to the GitHub Privacy Statement for details. <br><br>
+                <b>4. No Backend:</b> There is no server-side storage. If you delete your browser data, your saved projects will be permanently removed.
+            </div>
+        </div>
+
+        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-bottom: 15px; font-weight: 600;">
+            <input type="checkbox" id="agree-check"> I agree to the Terms of Service and Privacy Policy
+        </label>
+        
+        <button id="enter-btn" class="btn-primary" style="width:100%; height: 45px; opacity:0.5;" disabled onclick="enterSite()">Enter Website</button>
+    </div>
+</div>
+
+<div id="browser-title-bar">
+    <div class="tab-mock" id="display-title">Untitled</div>
+</div>
+
+<header id="main-header">
+    <div class="button-group">
+        <button class="btn-tab active" id="edit-tab" onclick="switchTab('edit')">Editor</button>
+        <button class="btn-tab" id="files-tab" onclick="switchTab('files')">Saved Files</button>
+    </div>
+
+    <div class="button-group" id="editor-actions">
+        <button class="btn-gray" onclick="undo()" title="Undo Change">Undo</button>
+        <button class="btn-gray" onclick="redo()" title="Redo Change">Redo</button>
+        <button class="btn-danger" onclick="clearEditor()">Clear</button>
+        <div style="width: 1px; height: 25px; background: #e2e8f0; margin: 0 4px;"></div>
+        <button class="btn-primary" onclick="createNew()">Create New</button>
+        <button class="btn-primary" id="save-new-btn" onclick="saveNewFile()">Save Project</button>
+        <button class="btn-success" id="update-btn" style="display:none;" onclick="updateExistingFile()">Update Changes</button>
+    </div>
+</header>
+
+<main>
+    <div id="editor-container">
+        <textarea id="code-input" placeholder="Enter HTML, CSS, or JS..." oninput="handleInput()"></textarea>
+    </div>
+    <div id="preview-container">
+        <iframe id="preview-window"></iframe>
+    </div>
+    <div id="files-container">
+        <h3 style="margin-top:0;">My Saved Projects</h3>
+        <div id="file-list"></div>
+    </div>
+</main>
+
+<footer>© 2026 Abel Joseph Christopher. All Rights Reserved. Managed with parental assistance.</footer>
+
+<script>
+    const codeInput = document.getElementById('code-input');
+    const previewWindow = document.getElementById('preview-window').contentWindow.document;
+    const displayTitle = document.getElementById('display-title');
+    const updateBtn = document.getElementById('update-btn');
+    const saveNewBtn = document.getElementById('save-new-btn');
+    const editorActions = document.getElementById('editor-actions');
+    let currentFile = null;
+
+    // HISTORY TRACKING
+    let history = [""];
+    let historyStep = 0;
+
+    function handleInput() {
+        updatePreview();
+        detectTitle();
+        if (codeInput.value !== history[historyStep]) {
+            history = history.slice(0, historyStep + 1);
+            history.push(codeInput.value);
+            historyStep++;
+        }
+    }
+
+    function updatePreview() {
+        const code = codeInput.value;
+        previewWindow.open();
+        previewWindow.write(code);
+        previewWindow.close();
+    }
+
+    function detectTitle() {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(codeInput.value, 'text/html');
+        const t = doc.querySelector('title');
+        displayTitle.innerText = t && t.innerText.trim() ? t.innerText : "Untitled";
+    }
+
+    function createNew() {
+        if (confirm("Open a blank workspace? Current unsaved code will be lost.")) {
+            codeInput.value = "";
+            currentFile = null;
+            updateBtn.style.display = 'none';
+            saveNewBtn.style.display = 'block';
+            handleInput();
+        }
+    }
+
+    function clearEditor() {
+        if (confirm("This will delete all text currently in the editor. Proceed?")) {
+            codeInput.value = "";
+            handleInput();
+        }
+    }
+
+    function undo() {
+        if (historyStep > 0) {
+            historyStep--;
+            codeInput.value = history[historyStep];
+            updatePreview();
+        }
+    }
+
+    function redo() {
+        if (historyStep < history.length - 1) {
+            historyStep++;
+            codeInput.value = history[historyStep];
+            updatePreview();
+        }
+    }
+
+    function saveNewFile() {
+        const name = prompt("Enter a filename for this project:");
+        if (!name) return;
+        const files = JSON.parse(localStorage.getItem('web_projects') || '{}');
+        if (files[name] && !confirm(`A file named '${name}' already exists. Replace it?`)) return;
+        
+        files[name] = codeInput.value;
+        localStorage.setItem('web_projects', JSON.stringify(files));
+        currentFile = name;
+        
+        saveNewBtn.style.display = 'none';
+        updateBtn.style.display = 'block';
+        alert("Project Saved Successfully!");
+    }
+
+    function updateExistingFile() {
+        if (!currentFile) return;
+        const files = JSON.parse(localStorage.getItem('web_projects') || '{}');
+        files[currentFile] = codeInput.value;
+        localStorage.setItem('web_projects', JSON.stringify(files));
+        alert(`Changes to "${currentFile}" updated!`);
+    }
+
+    function renderFiles() {
+        const files = JSON.parse(localStorage.getItem('web_projects') || '{}');
+        const list = document.getElementById('file-list');
+        list.innerHTML = '';
+        const names = Object.keys(files);
+        if (names.length === 0) list.innerHTML = '<p style="color:#94a3b8">No saved projects yet.</p>';
+
+        names.forEach(name => {
+            const div = document.createElement('div');
+            div.className = 'file-item';
+            div.innerHTML = `
+                <span onclick="loadFile('${name}')" style="cursor:pointer; color:var(--primary); font-weight:bold;">${name}</span>
+                <button class="btn-danger" style="padding:4px 10px; font-size:11px;" onclick="deleteFile('${name}')">Delete</button>
+            `;
+            list.appendChild(div);
+        });
+    }
+
+    function loadFile(name) {
+        const files = JSON.parse(localStorage.getItem('web_projects'));
+        codeInput.value = files[name];
+        currentFile = name;
+        saveNewBtn.style.display = 'none';
+        updateBtn.style.display = 'block';
+        handleInput();
+        switchTab('edit');
+    }
+
+    function deleteFile(name) {
+        if(confirm(`Permanently delete "${name}"?`)) {
+            const files = JSON.parse(localStorage.getItem('web_projects'));
+            delete files[name];
+            localStorage.setItem('web_projects', JSON.stringify(files));
+            if (currentFile === name) {
+                currentFile = null;
+                saveNewBtn.style.display = 'block';
+                updateBtn.style.display = 'none';
+            }
+            renderFiles();
+        }
+    }
+
+    function switchTab(tab) {
+        const isEdit = tab === 'edit';
+        document.getElementById('editor-container').style.display = isEdit ? 'flex' : 'none';
+        document.getElementById('preview-container').style.display = isEdit ? 'flex' : 'none';
+        document.getElementById('files-container').style.display = isEdit ? 'none' : 'block';
+        editorActions.style.visibility = isEdit ? 'visible' : 'hidden';
+        
+        document.getElementById('edit-tab').classList.toggle('active', isEdit);
+        document.getElementById('files-tab').classList.toggle('active', !isEdit);
+        if(!isEdit) renderFiles();
+    }
+
+    // Modal Control
+    const agreeCheck = document.getElementById('agree-check');
+    const enterBtn = document.getElementById('enter-btn');
+    agreeCheck.onchange = () => {
+        enterBtn.disabled = !agreeCheck.checked;
+        enterBtn.style.opacity = agreeCheck.checked ? 1 : 0.5;
+    };
+    function enterSite() { document.getElementById('agreement-overlay').style.display = 'none'; }
+</script>
+
+</body>
+</html>
